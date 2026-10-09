@@ -1,0 +1,62 @@
+{
+  "name": "queueless-server",
+  "version": "1.0.0",
+  "description": "QueueLess Government Office Queue Management System - Backend",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node src/scripts/seed.js",
+    "test": "echo \"No tests configured yet\" && exit 0"
+  },
+  "imports": {
+    "#config/*": "./src/config/*",
+    "#models/*": "./src/models/*",
+    "#controllers/*": "./src/controllers/*",
+    "#middlewares/*": "./src/middlewares/*",
+    "#routes/*": "./src/routes/*",
+    "#services/*": "./src/services/*",
+    "#utils/*": "./src/utils/*",
+    "#validations/*": "./src/validations/*"
+  },
+  "keywords": [
+    "queueless",
+    "government",
+    "queue-management"
+  ],
+  "author": "QueueLess Team",
+  "license": "MIT",
+  "nodemonConfig": {
+    "watch": [
+      "server.js",
+      "app.js",
+      "src/"
+    ],
+    "ext": "js,json",
+    "ignore": [
+      "node_modules/"
+    ]
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.3.1",
+    "google-auth-library": "^10.6.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.4.0",
+    "morgan": "^1.10.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.3.0",
+    "nodemon": "^3.1.14"
+  }
+}
