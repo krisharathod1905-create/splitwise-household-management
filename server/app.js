@@ -12,6 +12,7 @@ import officeRoutes from "#routes/office.routes.js";
 import tokenRoutes from "#routes/token.routes.js";
 import adminRoutes from "#routes/admin.routes.js";
 import notificationRoutes from "#routes/notification.routes.js";
+import assistantRoutes from "#routes/assistant.routes.js";
 import { errorHandler, notFoundHandler } from "#middlewares/error.middleware.js";
 
 const app = express();
@@ -80,6 +81,7 @@ app.use("/api/v1/offices", officeRoutes);
 app.use("/api/v1/tokens", tokenRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/assistant", assistantRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

@@ -1,10 +1,19 @@
-import { motion } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  FiArrowRight, FiCheckCircle, FiClock, FiMapPin, FiSmartphone,
-  FiBell, FiShield, FiTrendingDown, FiUsers, FiZap
-} from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
+import {
+  HiOutlineArrowTrendingDown as TrendingDownIcon,
+  HiOutlineBellAlert as AlertIcon,
+  HiOutlineBolt as BoltIcon,
+  HiOutlineBuildingLibrary as OfficeIcon,
+  HiOutlineClock as ClockIcon,
+  HiOutlineDevicePhoneMobile as MobileIcon,
+  HiOutlineMapPin as LocationIcon,
+  HiOutlineShieldCheck as ShieldIcon,
+  HiOutlineTicket as TicketIcon,
+  HiOutlineUserGroup as UsersIcon,
+} from "react-icons/hi2";
 import { officeApi } from "@/lib/api";
 
 // ─── Animation variants ───────────────────────────────────────────────────────
@@ -35,19 +44,19 @@ const demoQueueData = [
 ];
 
 const steps = [
-  { step: "01", icon: FiMapPin, title: "Choose Office", desc: "Browse nearby government offices and filter by department, city, or service type." },
-  { step: "02", icon: FiSmartphone, title: "Select Service", desc: "Pick the service you need and see real-time estimated waiting times before booking." },
-  { step: "03", icon: FiCheckCircle, title: "Get Virtual Token", desc: "Receive your unique digital token instantly. Your place in the queue is reserved." },
-  { step: "04", icon: FiBell, title: "Arrive When Notified", desc: "Track live updates and get alerted when your turn is approaching. No more waiting rooms." },
+  { step: "01", icon: LocationIcon, title: "Choose Office", desc: "Browse nearby government offices and filter by department, city, or service type." },
+  { step: "02", icon: MobileIcon, title: "Select Service", desc: "Pick the service you need and see real-time estimated waiting times before booking." },
+  { step: "03", icon: TicketIcon, title: "Get Virtual Token", desc: "Receive your unique digital token instantly. Your place in the queue is reserved." },
+  { step: "04", icon: AlertIcon, title: "Arrive When Notified", desc: "Track live updates and get alerted when your turn is approaching. No more waiting rooms." },
 ];
 
 const features = [
-  { icon: FiClock, title: "Smart Wait Predictions", desc: "Our AI-powered engine forecasts wait times using historical service data and live counter activity." },
-  { icon: FiZap, title: "Real-Time Updates", desc: "Queue positions and predictions update instantly as citizens are served — no page refresh needed." },
-  { icon: FiShield, title: "Secure & Private", desc: "QR-verified check-in, encrypted tokens, and minimal data collection protect your information." },
-  { icon: FiTrendingDown, title: "Reduce Physical Wait", desc: "Citizens report saving 60–80% of time previously spent sitting in waiting rooms." },
-  { icon: FiUsers, title: "Walk-in Friendly", desc: "No smartphone? Walk-in tokens are issued by staff and join the same fair queue." },
-  { icon: FiMapPin, title: "Multi-Office Support", desc: "Works across passport offices, RTOs, municipal corporations, and revenue departments." },
+  { icon: ClockIcon, title: "Smart Wait Predictions", desc: "Our AI-powered engine forecasts wait times using historical service data and live counter activity." },
+  { icon: BoltIcon, title: "Real-Time Updates", desc: "Queue positions and predictions update instantly as citizens are served — no page refresh needed." },
+  { icon: ShieldIcon, title: "Secure & Private", desc: "QR-verified check-in, encrypted tokens, and minimal data collection protect your information." },
+  { icon: TrendingDownIcon, title: "Reduce Physical Wait", desc: "Citizens report saving 60–80% of time previously spent sitting in waiting rooms." },
+  { icon: UsersIcon, title: "Walk-in Friendly", desc: "No smartphone? Walk-in tokens are issued by staff and join the same fair queue." },
+  { icon: OfficeIcon, title: "Multi-Office Support", desc: "Works across passport offices, RTOs, municipal corporations, and revenue departments." },
 ];
 
 const faqs = [
@@ -68,6 +77,7 @@ export default function LandingPage() {
   const offices = officesData || [];
 
   return (
+    <MotionConfig reducedMotion="user">
     <div>
       {/* ─── Hero Section ─────────────────────────────────────────────────── */}
       <section style={{
@@ -76,13 +86,19 @@ export default function LandingPage() {
         padding: "5rem 0 4rem",
       }}>
         {/* Ambient orbs */}
-        <div style={{
+        <motion.div
+          animate={{ scale: [1, 1.08, 1], opacity: [0.65, 1, 0.65] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          style={{
           position: "absolute", top: "-100px", right: "-100px",
           width: "500px", height: "500px",
           background: "radial-gradient(circle, rgba(13,148,136,0.2) 0%, transparent 70%)",
           borderRadius: "50%", pointerEvents: "none",
         }} />
-        <div style={{
+        <motion.div
+          animate={{ scale: [1, 1.12, 1], opacity: [0.55, 0.9, 0.55] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          style={{
           position: "absolute", bottom: "-50px", left: "10%",
           width: "300px", height: "300px",
           background: "radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%)",
@@ -143,7 +159,8 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}>
+              transition={{ duration: 0.7, delay: 0.3 }}
+              whileHover={{ y: -4 }}>
               <div style={{
                 background: "rgba(255,255,255,0.05)", backdropFilter: "blur(16px)",
                 border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.25rem",
@@ -234,18 +251,14 @@ export default function LandingPage() {
               const Icon = step.icon;
               return (
                 <motion.div key={step.step} variants={fadeUp}
-                  className="card" style={{ padding: "1.75rem", position: "relative" }}>
+                  whileHover={{ y: -6 }} whileTap={{ scale: 0.99 }}
+                  className="card landing-icon-card" style={{ padding: "1.75rem", position: "relative" }}>
                   <div style={{
                     position: "absolute", top: "1rem", right: "1rem",
                     fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "2.5rem",
                     color: "var(--color-border)", lineHeight: 1,
                   }}>{step.step}</div>
-                  <div style={{
-                    width: "48px", height: "48px", borderRadius: "12px",
-                    background: "linear-gradient(135deg, var(--color-blue-light), var(--color-teal-light))",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--color-blue)", marginBottom: "1rem",
-                  }}>
+                  <div className="landing-icon-tile landing-icon-tile--blue">
                     <Icon size={22} />
                   </div>
                   <h3 style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>{step.title}</h3>
@@ -294,7 +307,7 @@ export default function LandingPage() {
                   </div>
                   <h3 style={{ fontSize: "1rem", marginBottom: "0.375rem" }}>{office.name}</h3>
                   <p style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginBottom: "1rem" }}>
-                    <FiMapPin size={12} style={{ display: "inline", marginRight: "4px" }} />
+                    <LocationIcon size={12} style={{ display: "inline", marginRight: "4px" }} />
                     {office.address?.area}, {office.address?.city}
                   </p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.8rem" }}>
@@ -325,13 +338,10 @@ export default function LandingPage() {
             {features.map((f) => {
               const Icon = f.icon;
               return (
-                <motion.div key={f.title} variants={fadeUp} className="card" style={{ padding: "1.5rem" }}>
-                  <div style={{
-                    width: "44px", height: "44px", borderRadius: "10px",
-                    background: "linear-gradient(135deg, var(--color-blue-50), var(--color-teal-50))",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--color-teal)", marginBottom: "1rem",
-                  }}>
+                <motion.div key={f.title} variants={fadeUp}
+                  whileHover={{ y: -5 }} whileTap={{ scale: 0.99 }}
+                  className="card landing-icon-card" style={{ padding: "1.5rem" }}>
+                  <div className="landing-icon-tile landing-icon-tile--teal">
                     <Icon size={20} />
                   </div>
                   <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>{f.title}</h3>
@@ -398,5 +408,6 @@ export default function LandingPage() {
         }
       `}</style>
     </div>
+    </MotionConfig>
   );
 }

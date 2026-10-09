@@ -151,3 +151,7 @@ export const notificationApi = {
   markRead: (id) => api.patch(`/notifications/${id}/read`),
   markAllRead: () => api.post("/notifications/read-all"),
 };
+
+export const assistantApi = {
+  chat: (data) => api.post("/assistant/chat", data),
+};

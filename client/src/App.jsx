@@ -12,6 +12,7 @@ import CitizenLayout from "@/components/layout/CitizenLayout";
 import StaffLayout from "@/components/layout/StaffLayout";
 import AdminLayout from "@/components/layout/AdminLayout";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import AssistantWidget from "@/components/ui/AssistantWidget";
 
 // ─── Pages (lazy loaded) ─────────────────────────────────────────────────────
 const LandingPage = lazy(() => import("@/pages/public/LandingPage"));
@@ -157,6 +158,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <AppRoutes />
+          <AssistantWidget />
           <Toaster
             position="top-right"
             richColors

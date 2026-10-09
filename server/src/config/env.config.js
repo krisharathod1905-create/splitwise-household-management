@@ -25,6 +25,8 @@ const env = {
   GOOGLE_CLIENT_ID: getEnv("GOOGLE_CLIENT_ID", ""),
   RESEND_API_KEY: getEnv("RESEND_API_KEY", ""),
   FROM_EMAIL: getEnv("FROM_EMAIL", "noreply@queueless.app"),
+  OPENAI_API_KEY: getEnv("OPENAI_API_KEY", ""),
+  OPENAI_MODEL: getEnv("OPENAI_MODEL", ""),
   DEMO_MODE: getEnv("DEMO_MODE", "true") === "true",
 };
 
