@@ -273,7 +273,7 @@ export default function BookTokenPage() {
             </h2>
 
             {/* AI Prediction Box */}
-            <div className="bg-gradient-to-br from-slate-900 to-emerald-950 text-white p-5 rounded-2xl space-y-3 shadow-lg">
+            <div className="bg-linear-to-br from-slate-900 to-emerald-950 text-white p-5 rounded-2xl space-y-3 shadow-lg">
               <div className="flex items-center justify-between border-b border-slate-700 pb-3">
                 <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                   <FiClock /> Real-Time Queue Forecast

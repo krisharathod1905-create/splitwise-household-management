@@ -1,8 +1,24 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { FiUsers, FiClock, FiLayers, FiTrendingUp, FiAlertTriangle, FiCheckCircle, FiActivity } from "react-icons/fi";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  FiUsers,
+  FiClock,
+  FiLayers,
+  FiTrendingUp,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiActivity,
+} from "react-icons/fi";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import { adminApi } from "@/lib/api";
 
 export default function AdminDashboard() {
@@ -49,9 +65,12 @@ export default function AdminDashboard() {
               Govt Queue Control Center
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">System Admin Overview</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white!">
+            System Admin Overview
+          </h1>
           <p className="text-xs sm:text-sm text-slate-300">
-            Real-time congestion metrics, processing capacity, and multi-office analytics.
+            Real-time congestion metrics, processing capacity, and multi-office
+            analytics.
           </p>
         </div>
       </div>
@@ -63,8 +82,12 @@ export default function AdminDashboard() {
             <FiUsers />
           </div>
           <div>
-            <span className="text-xs text-slate-500 font-semibold block uppercase">Total Served Today</span>
-            <span className="text-2xl font-black text-slate-900">{stats?.totalTokensToday || 142}</span>
+            <span className="text-xs text-slate-500 font-semibold block uppercase">
+              Total Served Today
+            </span>
+            <span className="text-2xl font-black text-slate-900">
+              {stats?.totalTokensToday || 142}
+            </span>
           </div>
         </div>
 
@@ -73,8 +96,12 @@ export default function AdminDashboard() {
             <FiClock />
           </div>
           <div>
-            <span className="text-xs text-slate-500 font-semibold block uppercase">Avg Wait Time</span>
-            <span className="text-2xl font-black text-slate-900">~{stats?.avgWaitTimeMinutes || 11} min</span>
+            <span className="text-xs text-slate-500 font-semibold block uppercase">
+              Avg Wait Time
+            </span>
+            <span className="text-2xl font-black text-slate-900">
+              ~{stats?.avgWaitTimeMinutes || 11} min
+            </span>
           </div>
         </div>
 
@@ -83,8 +110,12 @@ export default function AdminDashboard() {
             <FiLayers />
           </div>
           <div>
-            <span className="text-xs text-slate-500 font-semibold block uppercase">Active Offices</span>
-            <span className="text-2xl font-black text-slate-900">{stats?.totalOffices || 3}</span>
+            <span className="text-xs text-slate-500 font-semibold block uppercase">
+              Active Offices
+            </span>
+            <span className="text-2xl font-black text-slate-900">
+              {stats?.totalOffices || 3}
+            </span>
           </div>
         </div>
 
@@ -93,7 +124,9 @@ export default function AdminDashboard() {
             <FiActivity />
           </div>
           <div>
-            <span className="text-xs text-slate-500 font-semibold block uppercase">System Efficiency</span>
+            <span className="text-xs text-slate-500 font-semibold block uppercase">
+              System Efficiency
+            </span>
             <span className="text-2xl font-black text-emerald-600">94.8%</span>
           </div>
         </div>
@@ -103,8 +136,12 @@ export default function AdminDashboard() {
       <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Hourly Queue Throughput</h2>
-            <p className="text-xs text-slate-500">Tokens issued vs completed by hour of day</p>
+            <h2 className="text-lg font-bold text-slate-900">
+              Hourly Queue Throughput
+            </h2>
+            <p className="text-xs text-slate-500">
+              Tokens issued vs completed by hour of day
+            </p>
           </div>
         </div>
 
@@ -121,9 +158,22 @@ export default function AdminDashboard() {
                   <stop offset="95%" stopColor="#0284c7" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="hour" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#64748b" }} />
-              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#64748b" }} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#f1f5f9"
+              />
+              <XAxis
+                dataKey="hour"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11, fill: "#64748b" }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11, fill: "#64748b" }}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "#0f172a",
@@ -133,8 +183,24 @@ export default function AdminDashboard() {
                   border: "none",
                 }}
               />
-              <Area type="monotone" dataKey="issued" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorIssued)" name="Tokens Issued" />
-              <Area type="monotone" dataKey="completed" stroke="#0284c7" strokeWidth={3} fillOpacity={1} fill="url(#colorCompleted)" name="Completed" />
+              <Area
+                type="monotone"
+                dataKey="issued"
+                stroke="#10b981"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorIssued)"
+                name="Tokens Issued"
+              />
+              <Area
+                type="monotone"
+                dataKey="completed"
+                stroke="#0284c7"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorCompleted)"
+                name="Completed"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
