@@ -42,6 +42,8 @@ export default function TokenDetailPage() {
     },
   });
 
+  console.log("Token Data:", token);
+
   // Generate QR Code image data URL on load
   useEffect(() => {
     if (!token?._id) return;
@@ -303,30 +305,31 @@ export default function TokenDetailPage() {
         )}
 
         {/* Action Buttons */}
-        {!isCompleted && !isCancelled && (
-          <div className="space-y-3 pt-2">
-            {!token.checkInStatus?.isCheckedIn && (
+        <div className="space-y-3 pt-2">
+          {!isCompleted &&
+            !isCancelled &&
+            token.status !== "checked_in" &&
+            !token.checkInStatus?.isCheckedIn && (
               <button
                 onClick={() => checkInMutation.mutate()}
                 disabled={checkInMutation.isPending}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2"
               >
-                <FiNavigation />{" "}
+                <FiNavigation />
                 {checkInMutation.isPending
                   ? "Checking In..."
                   : "I Have Arrived at Office (Check-In)"}
               </button>
             )}
 
-            <button
-              onClick={() => cancelMutation.mutate()}
-              disabled={cancelMutation.isPending}
-              className="w-full py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-2xl text-xs font-semibold transition-all border border-slate-200 flex items-center justify-center gap-1.5"
-            >
-              <FiXCircle /> Cancel This Token
-            </button>
-          </div>
-        )}
+          <button
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+            className="w-full py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-2xl text-xs font-semibold transition-all border border-slate-200 flex items-center justify-center gap-1.5"
+          >
+            <FiXCircle /> Cancel This Token
+          </button>
+        </div>
       </motion.div>
     </div>
   );

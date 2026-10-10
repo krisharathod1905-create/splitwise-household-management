@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FiUsers, FiVolume2, FiCheckCircle, FiXCircle, FiClock, FiSearch } from "react-icons/fi";
-import { tokenApi } from "@/lib/api";
+import { staffApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -9,35 +9,43 @@ export default function StaffQueuePage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const officeId = user?.assignedOffice?._id || user?.assignedOffice;
+  const officeId =
+    user?.assignedCounter?.officeId?._id ||
+    user?.assignedCounter?.officeId ||
+    user?.assignedOffice?._id ||
+    user?.assignedOfficeId?._id ||
+    user?.assignedOfficeId ||
+    user?.assignedOfficeIds?.[0]?._id ||
+    user?.assignedOfficeIds?.[0];
 
   const { data: queueData, isLoading } = useQuery({
     queryKey: ["staffQueue", officeId],
     queryFn: async () => {
       if (!officeId) return null;
-      const res = await tokenApi.getLiveQueueStatus(officeId);
+      const res = await staffApi.getQueue(officeId);
       return res.data.data;
     },
     refetchInterval: 5000,
   });
 
   const completeMutation = useMutation({
-    mutationFn: async (tokenId) => tokenApi.completeService(tokenId),
+    mutationFn: async () =>
+      staffApi.completeService(user?.assignedCounter?._id),
     onSuccess: () => {
       toast.success("Completed token");
-      queryClient.invalidateQueries(["staffQueue", officeId]);
+      queryClient.invalidateQueries({ queryKey: ["staffQueue", officeId] });
     },
   });
 
   const markMissedMutation = useMutation({
-    mutationFn: async (tokenId) => tokenApi.markMissed(tokenId),
+    mutationFn: async (tokenId) => staffApi.markMissed(tokenId),
     onSuccess: () => {
       toast.warn("Marked token missed");
-      queryClient.invalidateQueries(["staffQueue", officeId]);
+      queryClient.invalidateQueries({ queryKey: ["staffQueue", officeId] });
     },
   });
 
-  const queue = queueData?.queue || [];
+  const queue = queueData?.tokens || [];
   const filteredQueue = queue.filter(
     (t) =>
       t.tokenNumber.toLowerCase().includes(search.toLowerCase()) ||

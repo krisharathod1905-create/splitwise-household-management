@@ -37,6 +37,7 @@ const StaffDocumentReviewPage = lazy(() => import("@/pages/staff/StaffDocumentRe
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminOfficesPage = lazy(() => import("@/pages/admin/AdminOfficesPage"));
 const AdminStaffPage = lazy(() => import("@/pages/admin/AdminStaffPage"));
+const AdminCountersPage = lazy(() => import("@/pages/admin/AdminCountersPage"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
 const AdminAuditPage = lazy(() => import("@/pages/admin/AdminAuditPage"));
 
@@ -146,6 +147,7 @@ function AppRoutes() {
         <Route path="/admin" element={<SuspenseWrapper><AdminDashboard /></SuspenseWrapper>} />
         <Route path="/admin/offices" element={<SuspenseWrapper><AdminOfficesPage /></SuspenseWrapper>} />
         <Route path="/admin/staff" element={<SuspenseWrapper><AdminStaffPage /></SuspenseWrapper>} />
+        <Route path="/admin/counters" element={<SuspenseWrapper><AdminCountersPage /></SuspenseWrapper>} />
         <Route path="/admin/analytics" element={<SuspenseWrapper><AdminAnalyticsPage /></SuspenseWrapper>} />
         <Route path="/admin/audit" element={<SuspenseWrapper><AdminAuditPage /></SuspenseWrapper>} />
       </Route>

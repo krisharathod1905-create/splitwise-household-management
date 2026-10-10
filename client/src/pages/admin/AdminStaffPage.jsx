@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FiPlus, FiUserCheck, FiMail, FiPhone, FiLayers, FiX } from "react-icons/fi";
+import {
+  FiPlus,
+  FiUserCheck,
+  FiMail,
+  FiPhone,
+  FiLayers,
+  FiX,
+} from "react-icons/fi";
 import { adminApi, officeApi } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -10,7 +17,7 @@ export default function AdminStaffPage() {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
-    password: "Password123!",
+    password: "",
     phoneNumber: "",
     officeId: "",
   });
@@ -50,8 +57,12 @@ export default function AdminStaffPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Government Counter Staff</h1>
-          <p className="text-xs text-slate-500">Manage counter operators and assign office credentials</p>
+          <h1 className="text-2xl font-extrabold text-slate-900">
+            Government Counter Staff
+          </h1>
+          <p className="text-xs text-slate-500">
+            Manage counter operators and assign office credentials
+          </p>
         </div>
 
         <button
@@ -79,9 +90,13 @@ export default function AdminStaffPage() {
             <tbody className="divide-y divide-slate-100">
               {staffList?.map((member) => (
                 <tr key={member._id} className="hover:bg-slate-50">
-                  <td className="p-4 font-bold text-slate-900">{member.fullName}</td>
+                  <td className="p-4 font-bold text-slate-900">
+                    {member.fullName}
+                  </td>
                   <td className="p-4 text-slate-600">{member.email}</td>
-                  <td className="p-4 font-medium text-slate-800">{member.assignedOffice?.name || "Unassigned"}</td>
+                  <td className="p-4 font-medium text-slate-800">
+                    {member.assignedOfficeId?.name || "Unassigned"}
+                  </td>
                   <td className="p-4">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
                       {member.role}
@@ -104,8 +119,12 @@ export default function AdminStaffPage() {
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">Create Staff Account</h3>
-              <button onClick={() => setIsModalOpen(false)}><FiX /></button>
+              <h3 className="text-lg font-bold text-slate-900">
+                Create Staff Account
+              </h3>
+              <button onClick={() => setIsModalOpen(false)}>
+                <FiX />
+              </button>
             </div>
             <form
               onSubmit={(e) => {
@@ -146,7 +165,9 @@ export default function AdminStaffPage() {
               >
                 <option value="">Select Office Assignment</option>
                 {offices?.map((o) => (
-                  <option key={o._id} value={o._id}>{o.name}</option>
+                  <option key={o._id} value={o._id}>
+                    {o.name}
+                  </option>
                 ))}
               </select>
               <button

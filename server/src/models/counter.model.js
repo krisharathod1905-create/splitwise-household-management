@@ -40,6 +40,7 @@ const counterSchema = new mongoose.Schema(
 );
 
 counterSchema.index({ officeId: 1, status: 1 });
+counterSchema.index({ officeId: 1, counterNumber: 1 }, { unique: true });
 
 const Counter = mongoose.model("Counter", counterSchema);
 export default Counter;

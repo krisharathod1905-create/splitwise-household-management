@@ -58,12 +58,15 @@ const userSchema = new mongoose.Schema(
       type: notificationPreferencesSchema,
       default: () => ({}),
     },
-    assignedOfficeIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Office",
-      },
-    ],
+    assignedOfficeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Office",
+    },
+    assignedOfficeIds: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Office",
+    }],
+
     isActive: {
       type: Boolean,
       default: true,

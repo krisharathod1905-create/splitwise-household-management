@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { FiGrid, FiMapPin, FiUsers, FiBarChart2, FiFileText, FiLogOut } from "react-icons/fi";
+import { FiGrid, FiMapPin, FiUsers, FiLayers, FiBarChart2, FiFileText, FiLogOut } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -7,6 +7,7 @@ const navItems = [
   { href: "/admin", icon: FiGrid, label: "Overview" },
   { href: "/admin/offices", icon: FiMapPin, label: "Offices" },
   { href: "/admin/staff", icon: FiUsers, label: "Staff" },
+  { href: "/admin/counters", icon: FiLayers, label: "Counters" },
   { href: "/admin/analytics", icon: FiBarChart2, label: "Analytics" },
   { href: "/admin/audit", icon: FiFileText, label: "Audit Logs" },
 ];

@@ -76,6 +76,7 @@ export const getAdminCounters = asyncHandler(async (req, res) => {
   const { officeId } = req.query;
   const query = officeId ? { officeId } : {};
   const counters = await Counter.find(query)
+    .populate("officeId", "name officeCode")
     .populate("staffId", "fullName email")
     .populate("supportedServiceIds", "name serviceCode")
     .lean();
@@ -83,34 +84,139 @@ export const getAdminCounters = asyncHandler(async (req, res) => {
 });
 
 export const createCounter = asyncHandler(async (req, res) => {
-  const counter = await Counter.create(req.body);
-  return sendSuccess(res, { counter }, "Counter created.", 201);
+  const { officeId, counterNumber, displayName, staffId, supportedServiceIds = [], status = "available" } = req.body;
+  if (!officeId || !counterNumber) throw new ApiError(400, "officeId and counterNumber are required.");
+  const office = await Office.findById(officeId).select("_id");
+  if (!office) throw new ApiError(404, "Office not found.");
+  const services = await Service.find({ _id: { $in: supportedServiceIds }, officeId }).select("_id");
+  if (services.length !== supportedServiceIds.length) {
+    throw new ApiError(400, "Every supported service must belong to the selected office.");
+  }
+  let staff;
+  if (staffId) {
+    staff = await User.findOne({ _id: staffId, role: "staff", isActive: true });
+    if (!staff) throw new ApiError(404, "Active staff member not found.");
+    const staffOfficeIds = staff.assignedOfficeIds?.map((id) => id.toString()) || [];
+    if (staff.assignedOfficeId) staffOfficeIds.push(staff.assignedOfficeId.toString());
+    if (!staffOfficeIds.includes(officeId.toString())) {
+      throw new ApiError(400, "Staff member is not assigned to this office.");
+    }
+    if (await Counter.exists({ staffId })) {
+      throw new ApiError(409, "This staff member is already assigned to a counter.");
+    }
+  }
+  try {
+    const counter = await Counter.create({
+      officeId,
+      counterNumber,
+      displayName: displayName?.trim() || `Counter ${counterNumber}`,
+      staffId: staff?._id,
+      supportedServiceIds,
+      status,
+      lastActivityAt: new Date(),
+    });
+    await Service.updateMany(
+      { _id: { $in: supportedServiceIds } },
+      { $addToSet: { compatibleCounterIds: counter._id } }
+    );
+    const populated = await Counter.findById(counter._id)
+      .populate("staffId", "fullName email")
+      .populate("supportedServiceIds", "name serviceCode")
+      .lean();
+    return sendSuccess(res, { counter: populated }, "Counter created.", 201);
+  } catch (error) {
+    if (error.code === 11000) throw new ApiError(409, "Counter number already exists in this office.");
+    throw error;
+  }
 });
 
 export const updateCounter = asyncHandler(async (req, res) => {
   const { counterId } = req.params;
-  const counter = await Counter.findByIdAndUpdate(counterId, req.body, { new: true });
+  const counter = await Counter.findById(counterId);
   if (!counter) throw new ApiError(404, "Counter not found.");
-  return sendSuccess(res, { counter }, "Counter updated.");
+  if (counter.currentTokenId && (req.body.officeId || req.body.staffId !== undefined)) {
+    throw new ApiError(409, "Finish the active token before changing this counter assignment.");
+  }
+  const previousServiceIds = counter.supportedServiceIds.map((id) => id.toString());
+  const officeId = req.body.officeId || counter.officeId;
+  const supportedServiceIds = req.body.supportedServiceIds || counter.supportedServiceIds;
+  const services = await Service.find({ _id: { $in: supportedServiceIds }, officeId }).select("_id");
+  if (services.length !== supportedServiceIds.length) {
+    throw new ApiError(400, "Every supported service must belong to the selected office.");
+  }
+  if (req.body.staffId) {
+    const staff = await User.findOne({ _id: req.body.staffId, role: "staff", isActive: true });
+    if (!staff) throw new ApiError(404, "Active staff member not found.");
+    const staffOfficeIds = staff.assignedOfficeIds?.map((id) => id.toString()) || [];
+    if (staff.assignedOfficeId) staffOfficeIds.push(staff.assignedOfficeId.toString());
+    if (!staffOfficeIds.includes(officeId.toString())) {
+      throw new ApiError(400, "Staff member is not assigned to this office.");
+    }
+    const otherCounter = await Counter.findOne({ staffId: req.body.staffId, _id: { $ne: counterId } }).select("_id");
+    if (otherCounter) throw new ApiError(409, "This staff member is already assigned to another counter.");
+  }
+  Object.assign(counter, {
+    ...req.body,
+    officeId,
+    supportedServiceIds,
+    displayName: req.body.displayName?.trim() || counter.displayName,
+    lastActivityAt: new Date(),
+  });
+  try {
+    await counter.save();
+  } catch (error) {
+    if (error.code === 11000) throw new ApiError(409, "Counter number already exists in this office.");
+    throw error;
+  }
+  await Service.updateMany(
+    { _id: { $in: previousServiceIds } },
+    { $pull: { compatibleCounterIds: counter._id } }
+  );
+  await Service.updateMany(
+    { _id: { $in: supportedServiceIds } },
+    { $addToSet: { compatibleCounterIds: counter._id } }
+  );
+  const populated = await Counter.findById(counter._id)
+    .populate("staffId", "fullName email")
+    .populate("supportedServiceIds", "name serviceCode")
+    .lean();
+  return sendSuccess(res, { counter: populated }, "Counter updated.");
+});
+
+export const deleteCounter = asyncHandler(async (req, res) => {
+  const { counterId } = req.params;
+  const counter = await Counter.findById(counterId);
+  if (!counter) throw new ApiError(404, "Counter not found.");
+  if (counter.currentTokenId || counter.status === "busy") {
+    throw new ApiError(409, "Finish the active token before deleting this counter.");
+  }
+  await Counter.deleteOne({ _id: counterId });
+  await Service.updateMany(
+    { compatibleCounterIds: counter._id },
+    { $pull: { compatibleCounterIds: counter._id } }
+  );
+  return sendSuccess(res, { counterId }, "Counter deleted.");
 });
 
 export const listStaff = asyncHandler(async (req, res) => {
   const { page, limit, skip } = paginate(req.query);
   const [staff, total] = await Promise.all([
-    User.find({ role: { $in: ["staff", "admin"] } }).skip(skip).limit(limit).lean(),
+    User.find({ role: { $in: ["staff", "admin"] } }).skip(skip).limit(limit).populate("assignedOfficeId").lean(),
     User.countDocuments({ role: { $in: ["staff", "admin"] } }),
   ]);
   return sendSuccess(res, { staff, pagination: { page, limit, total } });
 });
 
 export const createStaff = asyncHandler(async (req, res) => {
-  const { fullName, email, password, role = "staff", officeIds } = req.body;
+  const { fullName, email, password, role = "staff", officeId } = req.body;
+  console.log("Creating staff with data:", { fullName, email, role, officeId });
   const existing = await User.findOne({ email: email.toLowerCase() });
   if (existing) throw new ApiError(409, "Email already in use.");
   const passwordHash = await User.hashPassword(password);
   const user = await User.create({
     fullName, email: email.toLowerCase(), passwordHash, role,
-    assignedOfficeIds: officeIds || [],
+    assignedOfficeId: officeId || undefined,
+    assignedOfficeIds: officeId ? [officeId] : [],
   });
   return sendSuccess(res, { user: { _id: user._id, fullName: user.fullName, email: user.email, role: user.role } }, "Staff account created.", 201);
 });

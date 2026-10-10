@@ -3,7 +3,7 @@ import {
   issueTokenCtrl, getMyTokensCtrl, getTokenByIdCtrl, cancelTokenCtrl, checkInCtrl,
   getTokenHistoryCtrl, callNextCtrl, startServiceCtrl, completeServiceCtrl,
   markMissedCtrl, updateCounterStatusCtrl, getStaffQueueCtrl, issueWalkInCtrl,
-  liveQueueStatusCtrl, staffQrCheckInCtrl,
+  liveQueueStatusCtrl, staffQrCheckInCtrl, getStaffCountersCtrl,
 } from "#controllers/token.controller.js";
 import { authenticate, requireStaff } from "#middlewares/auth.middleware.js";
 
@@ -24,6 +24,7 @@ router.post("/:tokenId/checkin", checkInCtrl);
 router.get("/queue/:officeId/:serviceId/live", liveQueueStatusCtrl);
 
 // Staff
+router.get("/staff/counters", requireStaff, getStaffCountersCtrl);
 router.get("/staff/queue", requireStaff, getStaffQueueCtrl);
 router.post("/staff/walkin", requireStaff, issueWalkInCtrl);
 router.post("/staff/checkin/qr", requireStaff, staffQrCheckInCtrl);

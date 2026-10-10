@@ -138,6 +138,17 @@ export const getTokenHistoryCtrl = asyncHandler(async (req, res) => {
 
 // ─── Staff Operations ─────────────────────────────────────────────────────────
 
+export const getStaffCountersCtrl = asyncHandler(async (req, res) => {
+  const query = req.user.role === "admin" ? {} : { staffId: req.user._id };
+  const counters = await Counter.find(query)
+    .populate("officeId", "name officeCode")
+    .populate("supportedServiceIds", "name serviceCode")
+    .populate("currentTokenId", "tokenNumber status")
+    .sort({ counterNumber: 1 })
+    .lean();
+  return sendSuccess(res, { counters });
+});
+
 export const callNextCtrl = asyncHandler(async (req, res) => {
   const { counterId } = req.params;
   const token = await callNextToken(counterId, req.user._id, getEmitter(req));
@@ -183,21 +194,69 @@ export const updateCounterStatusCtrl = asyncHandler(async (req, res) => {
 });
 
 export const getStaffQueueCtrl = asyncHandler(async (req, res) => {
-  const { officeId } = req.query;
+  const requestedOfficeId = req.query.officeId;
+  const assignedCounter = req.user.role !== "admin"
+    ? await Counter.findOne({ staffId: req.user._id }).select("officeId").lean()
+    : null;
+  const assignedOfficeId = assignedCounter?.officeId ||
+    req.user.assignedOfficeId ||
+    req.user.assignedOfficeIds?.[0];
+  const officeId = req.user.role === "admin"
+    ? requestedOfficeId || assignedOfficeId
+    : assignedOfficeId;
   if (!officeId) throw new ApiError(400, "officeId query parameter required.");
+  if (req.user.role !== "admin") {
+    const assignedOfficeIds = req.user.assignedOfficeIds?.length
+      ? req.user.assignedOfficeIds.map((id) => id.toString())
+      : assignedOfficeId ? [assignedOfficeId.toString()] : [];
+    if (
+      assignedOfficeIds.length > 0 &&
+      !assignedOfficeIds.includes(officeId.toString()) &&
+      assignedCounter?.officeId?.toString() !== officeId.toString()
+    ) {
+      throw new ApiError(403, "You are not assigned to this office.");
+    }
+  }
 
   const queueDate = getDateKey();
-  const tokens = await Token.find({
+  const activeStatuses = ["issued", "checked_in", "called", "in_service"];
+  const [tokens, totalTokensToday, completedToday, avgService] = await Promise.all([
+    Token.find({
+      officeId,
+      queueDate,
+      status: { $in: activeStatuses },
+    })
+      .sort({ status: -1, sequenceNumber: 1 })
+      .populate("userId", "fullName phone")
+      .populate("serviceId", "name serviceCode")
+      .populate("assignedCounterId", "counterNumber displayName")
+      .lean(),
+    Token.countDocuments({ officeId, queueDate }),
+    Token.countDocuments({ officeId, queueDate, status: "completed" }),
+    Token.aggregate([
+      { $match: { officeId: new (await import("mongoose")).default.Types.ObjectId(officeId), queueDate, status: "completed", serviceStartedAt: { $exists: true }, completedAt: { $exists: true } } },
+      { $group: { _id: null, average: { $avg: { $divide: [{ $subtract: ["$completedAt", "$serviceStartedAt"] }, 60000] } } } },
+    ]),
+  ]);
+
+  const counters = await Counter.find({
     officeId,
-    queueDate,
-    status: { $in: ["issued", "checked_in", "called", "in_service"] },
+    ...(req.user.role === "admin" ? {} : { staffId: req.user._id }),
   })
-    .sort({ status: -1, sequenceNumber: 1 })
-    .populate("userId", "fullName phone")
-    .populate("serviceId", "name serviceCode")
+    .select("_id counterNumber displayName staffId status currentTokenId supportedServiceIds")
+    .populate("currentTokenId", "tokenNumber status serviceId")
     .lean();
 
-  return sendSuccess(res, { tokens, queueDate });
+  return sendSuccess(res, {
+    tokens,
+    queueDate,
+    counters,
+    stats: {
+      totalTokensToday,
+      completedToday,
+      avgProcessingMinutes: avgService[0]?.average ? Math.round(avgService[0].average) : 0,
+    },
+  });
 });
 
 export const issueWalkInCtrl = asyncHandler(async (req, res) => {

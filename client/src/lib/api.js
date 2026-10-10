@@ -148,6 +148,7 @@ export const documentApi = {
 
 
 export const staffApi = {
+  getCounters: () => api.get("/tokens/staff/counters"),
   getQueue: (officeId) => api.get("/tokens/staff/queue", { params: { officeId } }),
   callNext: (counterId) => api.post(`/tokens/staff/counter/${counterId}/call-next`),
   startService: (counterId) => api.post(`/tokens/staff/counter/${counterId}/start-service`),
@@ -166,6 +167,7 @@ export const adminApi = {
   getCounters: (params) => api.get("/admin/counters", { params }),
   createCounter: (data) => api.post("/admin/counters", data),
   updateCounter: (id, data) => api.patch(`/admin/counters/${id}`, data),
+  deleteCounter: (id) => api.delete(`/admin/counters/${id}`),
   listStaff: (params) => api.get("/admin/staff", { params }),
   createStaff: (data) => api.post("/admin/staff", data),
   getAuditLogs: (params) => api.get("/admin/audit-logs", { params }),

@@ -301,24 +301,30 @@ export const callNextToken = async (counterId, staffId, emitFn) => {
   const queueDate = getDateKey();
   const serviceIds = counter.supportedServiceIds.map((s) => s._id);
 
-  // Find next eligible token (checked_in first, then issued, lowest sequence)
-  const nextToken = await Token.findOneAndUpdate(
-    {
-      officeId: counter.officeId,
-      serviceId: { $in: serviceIds },
-      queueDate,
-      status: { $in: ["checked_in", "issued"] },
-    },
-    {
+  // Prefer citizens who have arrived, then fall back to issued tokens.
+  const callUpdate = {
+    $set: {
       status: "called",
       calledAt: new Date(),
       assignedCounterId: counterId,
     },
-    {
-      sort: { status: -1, sequenceNumber: 1 }, // checked_in (-1 sorts 'i' before 'c' alphabetically - need custom)
-      new: true,
-    }
-  );
+  };
+  const query = {
+    officeId: counter.officeId,
+    serviceId: { $in: serviceIds },
+    queueDate,
+  };
+  const nextToken =
+    (await Token.findOneAndUpdate(
+      { ...query, status: "checked_in" },
+      callUpdate,
+      { sort: { sequenceNumber: 1 }, new: true }
+    )) ||
+    (await Token.findOneAndUpdate(
+      { ...query, status: "issued" },
+      callUpdate,
+      { sort: { sequenceNumber: 1 }, new: true }
+    ));
 
   if (!nextToken) throw new ApiError(404, "No eligible tokens waiting in queue.");
 

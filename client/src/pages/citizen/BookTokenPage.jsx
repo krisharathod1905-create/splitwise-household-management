@@ -13,6 +13,7 @@ import {
 } from "react-icons/fi";
 import { officeApi, tokenApi } from "@/lib/api";
 import { toast } from "sonner";
+import DocumentChecklist from "@/components/ui/DocumentChecklist";
 
 export default function BookTokenPage() {
   const [searchParams] = useSearchParams();

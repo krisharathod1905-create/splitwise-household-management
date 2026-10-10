@@ -1,4 +1,5 @@
 import User from "#models/user.model.js";
+import Counter from "#models/counter.model.js";
 import { ApiError } from "#utils/utils.js";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "#utils/jwt.utils.js";
 import env from "#config/env.config.js";
@@ -7,6 +8,20 @@ import { OAuth2Client } from "google-auth-library";
 const googleClient = env.GOOGLE_CLIENT_ID
   ? new OAuth2Client(env.GOOGLE_CLIENT_ID)
   : null;
+
+const getStaffAssignments = async (user) => {
+  if (!["staff", "admin"].includes(user.role)) return {};
+  const officeIds = user.assignedOfficeIds?.length
+    ? user.assignedOfficeIds
+    : user.assignedOfficeId
+      ? [user.assignedOfficeId]
+      : [];
+  const assignedCounter = await Counter.findOne({ staffId: user._id })
+    .select("_id officeId counterNumber displayName status currentTokenId supportedServiceIds")
+    .lean();
+  const assignedOffice = assignedCounter?.officeId || user.assignedOfficeId || officeIds[0];
+  return { assignedOfficeId: assignedOffice, assignedOfficeIds: officeIds, assignedOffice, assignedCounter };
+};
 
 export const registerUser = async ({ fullName, email, password, phone }) => {
   const existing = await User.findOne({ email: email.toLowerCase() });
@@ -73,7 +88,7 @@ export const loginUser = async ({ email, password }) => {
       phone: user.phone,
       preferredLanguage: user.preferredLanguage,
       notificationPreferences: user.notificationPreferences,
-      assignedOfficeIds: user.assignedOfficeIds,
+      ...(await getStaffAssignments(user)),
     },
     accessToken,
     refreshToken,
@@ -145,7 +160,7 @@ export const googleLogin = async ({ idToken }) => {
       avatarUrl: user.avatarUrl,
       preferredLanguage: user.preferredLanguage,
       notificationPreferences: user.notificationPreferences,
-      assignedOfficeIds: user.assignedOfficeIds,
+      ...(await getStaffAssignments(user)),
     },
     accessToken,
     refreshToken,

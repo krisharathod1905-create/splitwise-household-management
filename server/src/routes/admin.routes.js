@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   getOverviewStats, getHourlyStats, getAdminCounters,
-  createCounter, updateCounter, listStaff, createStaff, getAuditLogs,
+  createCounter, updateCounter, deleteCounter, listStaff, createStaff, getAuditLogs,
 } from "#controllers/admin.controller.js";
 import { authenticate, requireAdmin } from "#middlewares/auth.middleware.js";
 
@@ -13,6 +13,7 @@ router.get("/stats/hourly", getHourlyStats);
 router.get("/counters", getAdminCounters);
 router.post("/counters", createCounter);
 router.patch("/counters/:counterId", updateCounter);
+router.delete("/counters/:counterId", deleteCounter);
 router.get("/staff", listStaff);
 router.post("/staff", createStaff);
 router.get("/audit-logs", getAuditLogs);

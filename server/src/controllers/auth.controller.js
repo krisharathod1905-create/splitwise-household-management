@@ -50,7 +50,21 @@ export const logout = asyncHandler(async (req, res) => {
 });
 
 export const getMe = asyncHandler(async (req, res) => {
-  return sendSuccess(res, sanitizeUser(req.user), "User profile fetched.");
+  const user = sanitizeUser(req.user);
+  if (["staff", "admin"].includes(user.role)) {
+    const { default: Counter } = await import("#models/counter.model.js");
+    const officeIds = user.assignedOfficeIds?.length
+      ? user.assignedOfficeIds
+      : user.assignedOfficeId
+        ? [user.assignedOfficeId]
+        : [];
+    user.assignedOfficeIds = officeIds;
+    user.assignedCounter = await Counter.findOne({ staffId: user._id })
+      .select("_id officeId counterNumber displayName status currentTokenId supportedServiceIds")
+      .lean();
+    user.assignedOffice = user.assignedCounter?.officeId || user.assignedOfficeId || officeIds[0] || null;
+  }
+  return sendSuccess(res, user, "User profile fetched.");
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {
