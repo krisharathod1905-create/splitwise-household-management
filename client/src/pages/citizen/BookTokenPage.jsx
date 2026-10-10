@@ -63,7 +63,27 @@ export default function BookTokenPage() {
   // Issue Token Mutation
   const issueMutation = useMutation({
     mutationFn: async (payload) => {
-      const res = await tokenApi.issue(payload);
+      let documentSubmissionId;
+      const requirements =
+        selectedService?.documentRequirements ||
+        selectedService?.requiredDocuments ||
+        [];
+      if (requirements.length > 0) {
+        const draftResponse = await documentApi.getDraft({
+          officeId: selectedOfficeId,
+          serviceId: selectedServiceId,
+        });
+        let draft = draftResponse.data.data.submission;
+        if (!draft) {
+          const created = await documentApi.createDraft({
+            officeId: selectedOfficeId,
+            serviceId: selectedServiceId,
+          });
+          draft = created.data.data.submission;
+        }
+        documentSubmissionId = draft._id;
+      }
+      const res = await tokenApi.issue({ ...payload, documentSubmissionId });
       return res.data.data.token;
     },
     onSuccess: (token) => {
@@ -315,6 +335,13 @@ export default function BookTokenPage() {
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
+
+            {selectedService && (
+              <DocumentChecklist
+                officeId={selectedOfficeId}
+                service={selectedService}
+              />
+            )}
           </motion.div>
         )}
 

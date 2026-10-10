@@ -3,6 +3,7 @@ import Office from "#models/office.model.js";
 import Service from "#models/service.model.js";
 import Counter from "#models/counter.model.js";
 import Token from "#models/token.model.js";
+import { getServiceRequirements } from "#services/document.service.js";
 import { asyncHandler, sendSuccess, paginate, getDateKey, ApiError } from "#utils/utils.js";
 import { getLiveQueueStatus } from "#services/queue.service.js";
 
@@ -84,7 +85,7 @@ export const listOffices = asyncHandler(async (req, res) => {
   const officesWithStatus = await Promise.all(
     offices.map(async (office) => {
       const services = await Service.find({ officeId: office._id, enabled: true })
-        .select("_id name serviceCode")
+        .select("_id name serviceCode requiredDocuments documentRequirements expectedDurationMinutes")
         .lean();
       const queueDate = getDateKey();
       const waitingCount = await Token.countDocuments({
@@ -121,19 +122,28 @@ export const getOfficeById = asyncHandler(async (req, res) => {
     Service.find({ officeId, enabled: true }).lean(),
     Counter.find({ officeId }).populate("staffId", "fullName").lean(),
   ]);
+  const servicesWithRequirements = services.map((service) => ({
+    ...service,
+    documentRequirements: getServiceRequirements(service),
+  }));
 
   const queueDate = getDateKey();
   const liveStats = await Promise.all(
-    services.map((s) => getLiveQueueStatus(officeId, s._id))
+    servicesWithRequirements.map((s) => getLiveQueueStatus(officeId, s._id))
   );
 
-  return sendSuccess(res, { office, services, counters, liveStats });
+  return sendSuccess(res, { office, services: servicesWithRequirements, counters, liveStats });
 });
 
 export const getOfficeServices = asyncHandler(async (req, res) => {
   const { officeId } = req.params;
   const services = await Service.find({ officeId, enabled: true }).lean();
-  return sendSuccess(res, { services });
+  return sendSuccess(res, {
+    services: services.map((service) => ({
+      ...service,
+      documentRequirements: getServiceRequirements(service),
+    })),
+  });
 });
 
 export const getOfficeLiveStatus = asyncHandler(async (req, res) => {
@@ -165,13 +175,25 @@ export const updateOffice = asyncHandler(async (req, res) => {
 
 export const createService = asyncHandler(async (req, res) => {
   const { officeId } = req.params;
-  const service = await Service.create({ ...req.body, officeId });
+  const input = { ...req.body, officeId };
+  if (input.documentRequirements) {
+    input.requiredDocuments = input.documentRequirements
+      .filter((requirement) => requirement.required)
+      .map((requirement) => requirement.name);
+  }
+  const service = await Service.create(input);
   return sendSuccess(res, { service }, "Service created.", 201);
 });
 
 export const updateService = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const service = await Service.findByIdAndUpdate(serviceId, req.body, { new: true });
+  const input = { ...req.body };
+  if (input.documentRequirements) {
+    input.requiredDocuments = input.documentRequirements
+      .filter((requirement) => requirement.required)
+      .map((requirement) => requirement.name);
+  }
+  const service = await Service.findByIdAndUpdate(serviceId, input, { new: true, runValidators: true });
   if (!service) throw new ApiError(404, "Service not found.");
   return sendSuccess(res, { service }, "Service updated.");
 });

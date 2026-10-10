@@ -175,6 +175,18 @@ export default function CitizenDashboard() {
                       <span className="font-bold text-slate-800 truncate block">{token.serviceId?.name}</span>
                     </div>
 
+                    {token.documentReadinessStatus && (
+                      <div className={`rounded-xl px-3 py-2 text-[11px] font-semibold ${
+                        token.documentReadinessStatus === "ready"
+                          ? "bg-emerald-50 text-emerald-800"
+                          : token.documentReadinessStatus === "needs_changes"
+                          ? "bg-amber-50 text-amber-800"
+                          : "bg-blue-50 text-blue-800"
+                      }`}>
+                        Documents: {token.documentReadinessStatus.replace("_", " ")}
+                      </div>
+                    )}
+
                     <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                       <span className="text-slate-400 block text-[10px] uppercase font-semibold">Est Wait Time</span>
                       <span className="font-bold text-emerald-700 block">

@@ -23,6 +23,8 @@ const notificationSchema = new mongoose.Schema(
         "token_cancelled",
         "office_disruption",
         "token_completed",
+        "document_update",
+        "document_ready",
         "general",
       ],
       required: true,

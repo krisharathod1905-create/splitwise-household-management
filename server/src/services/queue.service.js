@@ -22,7 +22,7 @@ const allocateSequenceNumber = async (officeId, serviceId, queueDate) => {
 /**
  * Issue a new token for a citizen.
  */
-export const issueToken = async ({ userId, officeId, serviceId, source = "remote", citizenTravelMinutes }, serviceDoc, emitFn) => {
+export const issueToken = async ({ userId, officeId, serviceId, source = "remote", citizenTravelMinutes, documentSubmissionId, documentReadinessStatus }, serviceDoc, emitFn) => {
   const queueDate = getDateKey();
 
   // Check for existing active token (idempotency guard)
@@ -52,6 +52,8 @@ export const issueToken = async ({ userId, officeId, serviceId, source = "remote
     userId,
     officeId,
     serviceId,
+    documentSubmissionId,
+    documentReadinessStatus: documentReadinessStatus || (documentSubmissionId ? "submitted" : undefined),
     tokenNumber,
     sequenceNumber,
     queueDate,
@@ -114,7 +116,7 @@ export const getMyCitizenTokens = async (userId) => {
 export const getTokenById = async (tokenId, requestingUserId, requestingUserRole) => {
   const token = await Token.findById(tokenId)
     .populate("officeId", "name address department officeCode operationalSettings")
-    .populate("serviceId", "name serviceCode expectedDurationMinutes requiredDocuments")
+    .populate("serviceId", "name serviceCode expectedDurationMinutes requiredDocuments documentRequirements")
     .populate("assignedCounterId", "counterNumber displayName")
     .lean();
 

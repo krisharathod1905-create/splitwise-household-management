@@ -30,6 +30,14 @@ const tokenSchema = new mongoose.Schema(
       ref: "Service",
       required: true,
     },
+    documentSubmissionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DocumentSubmission",
+    },
+    documentReadinessStatus: {
+      type: String,
+      enum: ["draft", "submitted", "under_review", "needs_changes", "ready"],
+    },
     tokenNumber: {
       type: String,
       required: true,

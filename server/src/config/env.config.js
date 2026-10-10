@@ -27,6 +27,8 @@ const env = {
   FROM_EMAIL: getEnv("FROM_EMAIL", "noreply@queueless.app"),
   OPENAI_API_KEY: getEnv("OPENAI_API_KEY", ""),
   OPENAI_MODEL: getEnv("OPENAI_MODEL", ""),
+  DOCUMENT_STORAGE_PATH: getEnv("DOCUMENT_STORAGE_PATH", "./private-documents"),
+  DOCUMENT_RETENTION_DAYS: Number(getEnv("DOCUMENT_RETENTION_DAYS", "90")),
   DEMO_MODE: getEnv("DEMO_MODE", "true") === "true",
   TOKEN_QR_SECRET: getEnv("TOKEN_QR_SECRET"),
 };

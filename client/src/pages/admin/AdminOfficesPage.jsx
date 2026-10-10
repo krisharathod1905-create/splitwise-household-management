@@ -9,6 +9,7 @@ export default function AdminOfficesPage() {
   const [isAddOfficeModalOpen, setIsAddOfficeModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
   const [selectedOfficeId, setSelectedOfficeId] = useState(null);
+  const [editingServiceId, setEditingServiceId] = useState(null);
 
   const [officeForm, setOfficeForm] = useState({
     name: "",
@@ -23,9 +24,10 @@ export default function AdminOfficesPage() {
 
   const [serviceForm, setServiceForm] = useState({
     name: "",
-    code: "",
+    serviceCode: "",
     description: "",
-    avgProcessingTimeMinutes: 15,
+    expectedDurationMinutes: 15,
+    documentRequirements: [],
   });
 
   const { data: offices, isLoading } = useQuery({
@@ -64,18 +66,52 @@ export default function AdminOfficesPage() {
 
   const createServiceMutation = useMutation({
     mutationFn: async (payload) => {
-      const res = await officeApi.createService(selectedOfficeId, payload);
+      const res = editingServiceId
+        ? await officeApi.updateService(editingServiceId, payload)
+        : await officeApi.createService(selectedOfficeId, payload);
       return res.data;
     },
     onSuccess: () => {
-      toast.success("Service added to office!");
+      toast.success(editingServiceId ? "Service settings saved." : "Service added to office!");
       setIsAddServiceModalOpen(false);
+      setEditingServiceId(null);
       queryClient.invalidateQueries(["adminOffices"]);
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to add service.");
     },
   });
+
+  const openServiceEditor = (office, service) => {
+    setSelectedOfficeId(office._id);
+    setEditingServiceId(service?._id || null);
+    setServiceForm(service ? {
+      name: service.name || "",
+      serviceCode: service.serviceCode || service.code || "",
+      description: service.description || "",
+      expectedDurationMinutes: service.expectedDurationMinutes || service.avgProcessingTimeMinutes || 15,
+      documentRequirements: (service.documentRequirements?.length
+        ? service.documentRequirements
+        : (service.requiredDocuments || []).map((name, index) => ({
+            requirementId: `legacy-${index}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60)}`,
+            name,
+            instructions: "",
+            required: true,
+          }))).map((requirement) => ({
+            requirementId: requirement.requirementId || crypto.randomUUID(),
+            name: requirement.name,
+            instructions: requirement.instructions || "",
+            required: requirement.required !== false,
+          })),
+    } : {
+      name: "",
+      serviceCode: "",
+      description: "",
+      expectedDurationMinutes: 15,
+      documentRequirements: [],
+    });
+    setIsAddServiceModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -116,10 +152,7 @@ export default function AdminOfficesPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-700">Configured Services ({office.services?.length || 0})</span>
                   <button
-                    onClick={() => {
-                      setSelectedOfficeId(office._id);
-                      setIsAddServiceModalOpen(true);
-                    }}
+                    onClick={() => openServiceEditor(office)}
                     className="text-[11px] font-bold text-emerald-600 hover:underline flex items-center gap-1"
                   >
                     <FiPlus /> Add Service
@@ -128,14 +161,17 @@ export default function AdminOfficesPage() {
 
                 <div className="space-y-1.5">
                   {office.services?.map((srv) => (
-                    <div key={srv._id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
+                    <div key={srv._id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between gap-2 text-xs">
                       <div>
                         <span className="font-bold text-slate-800">{srv.name}</span>
-                        <span className="text-slate-400 text-[10px] block">Code: {srv.code}</span>
+                        <span className="text-slate-400 text-[10px] block">Code: {srv.serviceCode || srv.code}</span>
                       </div>
-                      <span className="text-[11px] font-semibold text-emerald-700">
-                        {srv.avgProcessingTimeMinutes} min
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] font-semibold text-emerald-700">
+                          {srv.expectedDurationMinutes || srv.avgProcessingTimeMinutes} min
+                        </span>
+                        <button type="button" onClick={() => openServiceEditor(office, srv)} className="font-bold text-blue-700 hover:underline">Edit</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -201,8 +237,8 @@ export default function AdminOfficesPage() {
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">Add Service to Office</h3>
-              <button onClick={() => setIsAddServiceModalOpen(false)}><FiX /></button>
+              <h3 className="text-lg font-bold text-slate-900">{editingServiceId ? "Edit Office Service" : "Add Service to Office"}</h3>
+              <button onClick={() => { setIsAddServiceModalOpen(false); setEditingServiceId(null); }}><FiX /></button>
             </div>
             <form
               onSubmit={(e) => {
@@ -223,24 +259,108 @@ export default function AdminOfficesPage() {
                 type="text"
                 placeholder="Service Code (e.g. DL-REN)"
                 required
-                value={serviceForm.code}
-                onChange={(e) => setServiceForm({ ...serviceForm, code: e.target.value })}
+                value={serviceForm.serviceCode}
+                onChange={(e) => setServiceForm({ ...serviceForm, serviceCode: e.target.value })}
                 className="w-full p-2.5 border rounded-xl"
+              />
+              <textarea
+                placeholder="Short service description"
+                value={serviceForm.description}
+                onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                className="w-full p-2.5 border rounded-xl"
+                rows={2}
               />
               <input
                 type="number"
                 placeholder="Avg Duration (Minutes)"
                 required
-                value={serviceForm.avgProcessingTimeMinutes}
-                onChange={(e) => setServiceForm({ ...serviceForm, avgProcessingTimeMinutes: Number(e.target.value) })}
+                min="1"
+                value={serviceForm.expectedDurationMinutes}
+                onChange={(e) => setServiceForm({ ...serviceForm, expectedDurationMinutes: Number(e.target.value) })}
                 className="w-full p-2.5 border rounded-xl"
               />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-800">Document requirements</h4>
+                  <button
+                    type="button"
+                    onClick={() => setServiceForm((form) => ({
+                      ...form,
+                      documentRequirements: [...form.documentRequirements, {
+                        requirementId: crypto.randomUUID(),
+                        name: "",
+                        instructions: "",
+                        required: true,
+                      }],
+                    }))}
+                    className="font-bold text-emerald-700"
+                  >
+                    + Add document
+                  </button>
+                </div>
+                {serviceForm.documentRequirements.map((requirement, index) => (
+                  <div key={requirement.requirementId} className="space-y-2 rounded-xl border p-3">
+                    <input
+                      type="text"
+                      placeholder="Document name"
+                      required
+                      maxLength={120}
+                      value={requirement.name}
+                      onChange={(e) => setServiceForm((form) => ({
+                        ...form,
+                        documentRequirements: form.documentRequirements.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, name: e.target.value } : item
+                        ),
+                      }))}
+                      className="w-full p-2.5 border rounded-xl"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Instructions (optional)"
+                      maxLength={500}
+                      value={requirement.instructions}
+                      onChange={(e) => setServiceForm((form) => ({
+                        ...form,
+                        documentRequirements: form.documentRequirements.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, instructions: e.target.value } : item
+                        ),
+                      }))}
+                      className="w-full p-2.5 border rounded-xl"
+                    />
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-slate-600">
+                        <input
+                          type="checkbox"
+                          checked={requirement.required}
+                          onChange={(e) => setServiceForm((form) => ({
+                            ...form,
+                            documentRequirements: form.documentRequirements.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, required: e.target.checked } : item
+                            ),
+                          }))}
+                        />
+                        Required
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setServiceForm((form) => ({
+                          ...form,
+                          documentRequirements: form.documentRequirements.filter((_, itemIndex) => itemIndex !== index),
+                        }))}
+                        className="font-semibold text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
               <button
                 type="submit"
                 disabled={createServiceMutation.isPending}
                 className="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs"
               >
-                Add Service
+                {createServiceMutation.isPending ? "Saving..." : editingServiceId ? "Save Service" : "Add Service"}
               </button>
             </form>
           </div>

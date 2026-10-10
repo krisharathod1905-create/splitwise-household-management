@@ -15,6 +15,7 @@ import { predictWaitTime } from "#services/prediction.service.js";
 import Service from "#models/service.model.js";
 import Token from "#models/token.model.js";
 import Counter from "#models/counter.model.js";
+import DocumentSubmission from "#models/documentSubmission.model.js";
 import { asyncHandler, sendSuccess, ApiError, getDateKey, paginate } from "#utils/utils.js";
 
 // Attach socket emitter from app
@@ -23,16 +24,52 @@ const getEmitter = (req) => req.app.locals.emitEvent;
 // ─── Citizen Operations ───────────────────────────────────────────────────────
 
 export const issueTokenCtrl = asyncHandler(async (req, res) => {
-  const { officeId, serviceId, citizenTravelMinutes } = req.body;
+  const { officeId, serviceId, citizenTravelMinutes, documentSubmissionId } = req.body;
   const service = await Service.findById(serviceId);
   if (!service || !service.enabled) throw new ApiError(404, "Service not found or not available.");
   if (service.officeId.toString() !== officeId) throw new ApiError(400, "Service does not belong to this office.");
 
+  let submission;
+  if (documentSubmissionId) {
+    submission = await DocumentSubmission.findOne({
+      _id: documentSubmissionId,
+      userId: req.user._id,
+      officeId,
+      serviceId,
+      status: "draft",
+      tokenId: { $exists: false },
+    });
+    if (!submission) throw new ApiError(404, "Document draft not found or no longer available.");
+  }
+  const documentReadinessStatus = submission &&
+    !submission.documents.some((document) => document.required) &&
+    !submission.documents.some((document) => document.storageKey)
+    ? "ready"
+    : submission ? "submitted" : undefined;
+
   const token = await issueToken(
-    { userId: req.user._id, officeId, serviceId, source: "remote", citizenTravelMinutes },
+    {
+      userId: req.user._id,
+      officeId,
+      serviceId,
+      source: "remote",
+      citizenTravelMinutes,
+      documentSubmissionId: submission?._id,
+      documentReadinessStatus,
+    },
     service,
     getEmitter(req)
   );
+  if (submission) {
+    submission.tokenId = token._id;
+    submission.status = documentReadinessStatus;
+    submission.submittedAt = new Date();
+    await submission.save();
+    await Token.updateOne(
+      { _id: token._id },
+      { $set: { documentReadinessStatus: submission.status } }
+    );
+  }
   return sendSuccess(res, { token }, "Token issued successfully.", 201);
 });
 

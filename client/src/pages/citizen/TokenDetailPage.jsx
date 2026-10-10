@@ -31,6 +31,16 @@ export default function TokenDetailPage() {
     },
     refetchInterval: 5000,
   });
+  const { data: documentSubmission } = useQuery({
+    queryKey: ["documentSubmission", token?.documentSubmissionId],
+    enabled: Boolean(token?.documentSubmissionId),
+    queryFn: async () => {
+      const response = await documentApi.getSubmission(
+        token.documentSubmissionId,
+      );
+      return response.data.data.submission;
+    },
+  });
 
   // Generate QR Code image data URL on load
   useEffect(() => {
@@ -284,6 +294,13 @@ export default function TokenDetailPage() {
             </span>
           </div>
         </div>
+
+        {documentSubmission && token.serviceId && (
+          <DocumentChecklist
+            service={token.serviceId}
+            submissionId={documentSubmission._id}
+          />
+        )}
 
         {/* Action Buttons */}
         {!isCompleted && !isCancelled && (

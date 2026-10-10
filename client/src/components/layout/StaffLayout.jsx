@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { FiMonitor, FiList, FiLogOut, FiLayers } from "react-icons/fi";
+import { FiMonitor, FiList, FiLogOut, FiLayers, FiFileText } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -7,6 +7,7 @@ const navItems = [
   { href: "/staff", icon: FiMonitor, label: "Dashboard" },
   { href: "/staff/queue", icon: FiList, label: "Queue" },
   { href: "/staff/counter", icon: FiLayers, label: "Counter" },
+  { href: "/staff/documents", icon: FiFileText, label: "Documents" },
 ];
 
 export default function StaffLayout() {
