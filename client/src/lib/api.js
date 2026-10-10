@@ -131,6 +131,8 @@ export const staffApi = {
   updateCounterStatus: (counterId, data) =>
     api.patch(`/tokens/staff/counter/${counterId}/status`, data),
   issueWalkIn: (data) => api.post("/tokens/staff/walkin", data),
+  qrCheckIn: (qrCodeData, counterId) =>
+    api.post("/tokens/staff/checkin/qr", { qrCodeData, ...(counterId ? { counterId } : {}) }),
 };
 
 export const adminApi = {

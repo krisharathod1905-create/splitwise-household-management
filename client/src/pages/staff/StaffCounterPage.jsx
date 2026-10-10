@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FiMonitor, FiCheckCircle, FiVolume2, FiCoffee, FiXCircle } from "react-icons/fi";
-import { tokenApi, adminApi } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FiCheckCircle, FiCoffee, FiXCircle } from "react-icons/fi";
+import { tokenApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import StaffQrScanner from "@/components/staff/StaffQrScanner";
 
 export default function StaffCounterPage() {
   const { user } = useAuth();
@@ -99,6 +100,21 @@ export default function StaffCounterPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+        <div>
+          <h2 className="text-base font-bold text-slate-900">Secure QR Check-In</h2>
+          <p className="text-xs text-slate-500">
+            Scan a citizen QR code to verify it on the server and add the token to this office queue.
+          </p>
+        </div>
+        <StaffQrScanner
+          counterId={user?.assignedCounter?._id}
+          onCheckedIn={() => {
+            queryClient.invalidateQueries({ queryKey: ["staffQueue", officeId] });
+          }}
+        />
       </div>
     </div>
   );

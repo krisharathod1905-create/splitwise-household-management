@@ -5,6 +5,7 @@ import ServiceHistory from "#models/serviceHistory.model.js";
 import AuditLog from "#models/auditLog.model.js";
 import { ApiError, getDateKey } from "#utils/utils.js";
 import { predictWaitTime, recalculateQueuePredictions } from "#services/prediction.service.js";
+import { createTokenQrData, verifyTokenQrData } from "#utils/tokenQr.js";
 
 /**
  * Atomically allocate the next sequence number for a given office+service+date.
@@ -61,10 +62,6 @@ export const issueToken = async ({ userId, officeId, serviceId, source = "remote
     citizenTravelMinutes,
   });
 
-  // Generate QR verification nonce
-  token.generateVerificationNonce();
-  await token.save();
-
   // Calculate initial prediction
   const prediction = await predictWaitTime(token._id.toString());
   if (prediction) {
@@ -92,7 +89,10 @@ export const issueToken = async ({ userId, officeId, serviceId, source = "remote
     emitFn("queue:updated", { officeId, serviceId });
   }
 
-  return { ...token.toObject(), prediction, verificationNonce: token.verificationNonce };
+  const tokenData = token.toObject();
+  delete tokenData.verificationNonce;
+  delete tokenData.verificationNonceHash;
+  return { ...tokenData, prediction, qrCodeData: createTokenQrData(token) };
 };
 
 /**
@@ -127,7 +127,9 @@ export const getTokenById = async (tokenId, requestingUserId, requestingUserRole
     throw new ApiError(403, "You are not authorized to view this token.");
   }
 
-  return token;
+  delete token.verificationNonce;
+  delete token.verificationNonceHash;
+  return { ...token, qrCodeData: createTokenQrData(token) };
 };
 
 /**
@@ -195,12 +197,88 @@ export const checkInToken = async (tokenId, userId, method = "auto", verificatio
     token.nonceUsed = true;
   }
 
-  token.status = "checked_in";
-  token.checkedInAt = new Date();
-  token.checkInData = { method, verifiedAt: new Date() };
-  await token.save();
+  const checkedInAt = new Date();
+  const checkedIn = await Token.findOneAndUpdate(
+    { _id: tokenId, userId, status: "issued" },
+    { $set: { status: "checked_in", checkedInAt, checkInData: { method, verifiedAt: checkedInAt } } },
+    { new: true }
+  );
+  if (!checkedIn) throw new ApiError(409, "Token was already checked in or is no longer available.");
 
-  return token;
+  return checkedIn;
+};
+
+/**
+ * Verify a signed QR payload and atomically check in a token for authorized staff.
+ */
+export const checkInTokenByStaff = async ({ qrCodeData, staff, counterId, emitFn }) => {
+  const qrPayload = verifyTokenQrData(qrCodeData);
+  if (!qrPayload) throw new ApiError(400, "Invalid or expired QR code.");
+
+  const token = await Token.findById(qrPayload.tokenId).select("+verificationNonceHash");
+  if (!token) throw new ApiError(404, "Token not found.");
+
+  const isAdmin = staff.role === "admin";
+  const assignedOfficeIds = (staff.assignedOfficeIds || []).map((id) => id.toString());
+  let counter = null;
+  if (counterId) {
+    counter = await Counter.findById(counterId);
+    if (!counter) throw new ApiError(404, "Counter not found.");
+    if (counter.staffId?.toString() !== staff._id.toString() && !isAdmin) {
+      throw new ApiError(403, "You are not assigned to this counter.");
+    }
+    if (counter.officeId.toString() !== token.officeId.toString()) {
+      throw new ApiError(403, "Counter does not belong to this token's office.");
+    }
+  } else if (!isAdmin && !assignedOfficeIds.includes(token.officeId.toString())) {
+    counter = await Counter.findOne({ officeId: token.officeId, staffId: staff._id }).select("_id officeId");
+    if (!counter) throw new ApiError(403, "You are not assigned to this token's office.");
+  }
+
+  if (!["issued", "checked_in"].includes(token.status)) {
+    throw new ApiError(409, `Cannot check in a token with status "${token.status}".`);
+  }
+  if (token.status === "checked_in") return token;
+
+  const checkedInAt = new Date();
+  const checkedIn = await Token.findOneAndUpdate(
+    { _id: token._id, status: "issued" },
+    {
+      $set: {
+        status: "checked_in",
+        checkedInAt,
+        checkInData: {
+          method: "qr",
+          verifiedAt: checkedInAt,
+          verifiedBy: staff._id,
+          ...(counter ? { counterId: counter._id } : {}),
+        },
+      },
+    },
+    { new: true }
+  );
+  if (!checkedIn) throw new ApiError(409, "Token was already checked in or is no longer available.");
+
+  await AuditLog.create({
+    actorId: staff._id,
+    actorRole: staff.role,
+    eventType: "token_checked_in",
+    officeId: token.officeId,
+    tokenId: token._id,
+    details: { method: "qr", counterId: counter?._id },
+  });
+
+  if (emitFn) {
+    emitFn("token:statusChanged", {
+      tokenId: token._id,
+      status: "checked_in",
+      officeId: token.officeId,
+      serviceId: token.serviceId,
+      userId: token.userId,
+    });
+    emitFn("queue:updated", { officeId: token.officeId, serviceId: token.serviceId });
+  }
+  return checkedIn;
 };
 
 // ─── Staff Operations ─────────────────────────────────────────────────────────

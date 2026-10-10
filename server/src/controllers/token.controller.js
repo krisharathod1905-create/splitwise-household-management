@@ -9,6 +9,7 @@ import {
   completeService,
   markTokenMissed,
   getLiveQueueStatus,
+  checkInTokenByStaff,
 } from "#services/queue.service.js";
 import { predictWaitTime } from "#services/prediction.service.js";
 import Service from "#models/service.model.js";
@@ -58,6 +59,20 @@ export const checkInCtrl = asyncHandler(async (req, res) => {
   const { method, verificationNonce } = req.body;
   const token = await checkInToken(tokenId, req.user._id, method || "auto", verificationNonce);
   return sendSuccess(res, { token }, "Checked in successfully.");
+});
+
+export const staffQrCheckInCtrl = asyncHandler(async (req, res) => {
+  const { qrCodeData, counterId } = req.body;
+  if (typeof qrCodeData !== "string" || qrCodeData.length > 2048) {
+    throw new ApiError(400, "A valid QR code payload is required.");
+  }
+  const token = await checkInTokenByStaff({
+    qrCodeData,
+    staff: req.user,
+    counterId,
+    emitFn: getEmitter(req),
+  });
+  return sendSuccess(res, { token }, "Token checked in successfully.");
 });
 
 export const getTokenHistoryCtrl = asyncHandler(async (req, res) => {

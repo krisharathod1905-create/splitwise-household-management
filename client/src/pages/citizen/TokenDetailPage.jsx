@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { FiClock, FiMapPin, FiCheckCircle, FiXCircle, FiGrid, FiNavigation, FiPhoneCall, FiAlertTriangle, FiArrowLeft } from "react-icons/fi";
+import {
+  FiXCircle,
+  FiNavigation,
+  FiAlertTriangle,
+  FiArrowLeft,
+} from "react-icons/fi";
 import { tokenApi } from "@/lib/api";
 import { getSocket, joinQueueRoom } from "@/lib/socket";
 import { toast } from "sonner";
@@ -14,7 +19,11 @@ export default function TokenDetailPage() {
   const queryClient = useQueryClient();
   const [qrDataUrl, setQrDataUrl] = useState("");
 
-  const { data: token, isLoading, error, refetch } = useQuery({
+  const {
+    data: token,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["token", tokenId],
     queryFn: async () => {
       const res = await tokenApi.getById(tokenId);
@@ -25,12 +34,38 @@ export default function TokenDetailPage() {
 
   // Generate QR Code image data URL on load
   useEffect(() => {
-    if (token?.qrCodeData) {
-      QRCode.toDataURL(token.qrCodeData, { width: 200, margin: 2 })
-        .then((url) => setQrDataUrl(url))
-        .catch((err) => console.error("QR Code error:", err));
-    }
-  }, [token]);
+    if (!token?._id) return;
+
+    let cancelled = false;
+
+    const generateQR = async () => {
+      try {
+        if (!token.qrCodeData) {
+          throw new Error("Secure QR payload is unavailable.");
+        }
+        const qrValue = token.qrCodeData;
+
+        const url = await QRCode.toDataURL(String(qrValue), {
+          width: 200,
+          margin: 2,
+          errorCorrectionLevel: "M",
+        });
+
+        if (!cancelled) {
+          setQrDataUrl(url);
+        }
+      } catch (err) {
+        console.error("QR Code generation failed:", err);
+        if (!cancelled) setQrDataUrl("");
+      }
+    };
+
+    generateQR();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token?._id, token?.qrCodeData]);
 
   // Real-time Socket Listener
   useEffect(() => {
@@ -39,7 +74,7 @@ export default function TokenDetailPage() {
       joinQueueRoom(token.officeId._id);
 
       const handleUpdate = () => {
-        queryClient.invalidateQueries(["token", tokenId]);
+        queryClient.invalidateQueries({ queryKey: ["token", tokenId] });
       };
 
       socket.on("queue:updated", handleUpdate);
@@ -62,8 +97,10 @@ export default function TokenDetailPage() {
       return res.data;
     },
     onSuccess: () => {
-      toast.success("Checked in successfully! Office notified of your arrival.");
-      queryClient.invalidateQueries(["token", tokenId]);
+      toast.success(
+        "Checked in successfully! Office notified of your arrival.",
+      );
+      queryClient.invalidateQueries({ queryKey: ["token", tokenId] });
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Check-in failed.");
@@ -77,7 +114,7 @@ export default function TokenDetailPage() {
     },
     onSuccess: () => {
       toast.info("Token cancelled.");
-      queryClient.invalidateQueries(["token", tokenId]);
+      queryClient.invalidateQueries({ queryKey: ["token", tokenId] });
       navigate("/dashboard");
     },
     onError: (err) => {
@@ -86,7 +123,9 @@ export default function TokenDetailPage() {
   });
 
   if (isLoading) {
-    return <div className="h-96 bg-slate-100 animate-pulse rounded-3xl max-w-2xl mx-auto"></div>;
+    return (
+      <div className="h-96 bg-slate-100 animate-pulse rounded-3xl max-w-2xl mx-auto"></div>
+    );
   }
 
   if (error || !token) {
@@ -94,7 +133,10 @@ export default function TokenDetailPage() {
       <div className="max-w-md mx-auto text-center py-16 space-y-4">
         <FiAlertTriangle className="text-amber-500 text-5xl mx-auto" />
         <h2 className="text-xl font-bold">Token Not Found</h2>
-        <Link to="/dashboard" className="inline-block px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold">
+        <Link
+          to="/dashboard"
+          className="inline-block px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold"
+        >
           Back to Dashboard
         </Link>
       </div>
@@ -108,7 +150,10 @@ export default function TokenDetailPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900">
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900"
+      >
         <FiArrowLeft /> Back to Dashboard
       </Link>
 
@@ -120,14 +165,15 @@ export default function TokenDetailPage() {
           isCalled
             ? "border-rose-500 ring-4 ring-rose-500/20"
             : isInService
-            ? "border-emerald-500 ring-4 ring-emerald-500/20"
-            : "border-slate-200/80"
+              ? "border-emerald-500 ring-4 ring-emerald-500/20"
+              : "border-slate-200/80"
         }`}
       >
         {/* Call Banner */}
         {isCalled && (
           <div className="bg-rose-600 text-white font-extrabold text-center py-3 px-4 rounded-2xl animate-pulse shadow-lg">
-            🔔 YOUR TURN NOW! Please proceed immediately to {token.assignedCounter?.name || "Counter 1"}
+            🔔 YOUR TURN NOW! Please proceed immediately to{" "}
+            {token.assignedCounter?.name || "Counter 1"}
           </div>
         )}
 
@@ -137,7 +183,9 @@ export default function TokenDetailPage() {
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
               {token.officeId?.name}
             </span>
-            <h1 className="text-lg font-bold text-slate-900">{token.serviceId?.name}</h1>
+            <h1 className="text-lg font-bold text-slate-900">
+              {token.serviceId?.name}
+            </h1>
           </div>
 
           <span
@@ -145,12 +193,12 @@ export default function TokenDetailPage() {
               isCalled
                 ? "bg-rose-100 text-rose-800 border border-rose-300"
                 : isInService
-                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                : isCompleted
-                ? "bg-slate-100 text-slate-700"
-                : isCancelled
-                ? "bg-rose-50 text-rose-600"
-                : "bg-emerald-500 text-white"
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                  : isCompleted
+                    ? "bg-slate-100 text-slate-700"
+                    : isCancelled
+                      ? "bg-rose-50 text-rose-600"
+                      : "bg-emerald-500 text-white"
             }`}
           >
             {token.status}
@@ -167,48 +215,72 @@ export default function TokenDetailPage() {
               {token.tokenNumber}
             </div>
             <div className="text-xs text-slate-300 pt-1">
-              Position in Queue: <span className="font-bold text-white">{token.queuePosition || 0}</span>
+              Position in Queue:{" "}
+              <span className="font-bold text-white">
+                {token.queuePosition || 0}
+              </span>
             </div>
           </div>
 
           <div className="flex flex-col items-center justify-center space-y-2 border-t sm:border-t-0 sm:border-l border-slate-800 pt-4 sm:pt-0">
             {qrDataUrl ? (
-              <img src={qrDataUrl} alt="Token QR Code" className="w-28 h-28 bg-white p-2 rounded-xl shadow-md" />
+              <img
+                src={qrDataUrl}
+                alt="Token QR Code"
+                className="w-28 h-28 bg-white p-2 rounded-xl shadow-md"
+              />
             ) : (
               <div className="w-28 h-28 bg-slate-800 rounded-xl flex items-center justify-center text-xs text-slate-500">
-                Generating QR...
+                Secure QR unavailable. Please retry.
               </div>
             )}
-            <span className="text-[10px] text-slate-400 font-mono">Scan at office check-in</span>
+            <span className="text-[10px] text-slate-400 font-mono">
+              Scan at office check-in
+            </span>
           </div>
         </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Est Wait Time</span>
+            <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+              Est Wait Time
+            </span>
             <span className="text-lg font-bold text-emerald-700">
               ~{token.prediction?.predictedWaitMinutes || 10} min
             </span>
           </div>
 
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Est Call Time</span>
+            <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+              Est Call Time
+            </span>
             <span className="text-base font-bold text-slate-800">
               {token.prediction?.estimatedCallTime
-                ? new Date(token.prediction.estimatedCallTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                ? new Date(
+                    token.prediction.estimatedCallTime,
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
                 : "Calculating..."}
             </span>
           </div>
 
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center col-span-2 sm:col-span-1">
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Check-In Status</span>
+            <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+              Check-In Status
+            </span>
             <span
               className={`text-sm font-bold block ${
-                token.checkInStatus?.isCheckedIn ? "text-emerald-600" : "text-amber-600"
+                token.checkInStatus?.isCheckedIn
+                  ? "text-emerald-600"
+                  : "text-amber-600"
               }`}
             >
-              {token.checkInStatus?.isCheckedIn ? "✓ Checked In" : "Not Checked In"}
+              {token.checkInStatus?.isCheckedIn
+                ? "✓ Checked In"
+                : "Not Checked In"}
             </span>
           </div>
         </div>
@@ -222,7 +294,10 @@ export default function TokenDetailPage() {
                 disabled={checkInMutation.isPending}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2"
               >
-                <FiNavigation /> {checkInMutation.isPending ? "Checking In..." : "I Have Arrived at Office (Check-In)"}
+                <FiNavigation />{" "}
+                {checkInMutation.isPending
+                  ? "Checking In..."
+                  : "I Have Arrived at Office (Check-In)"}
               </button>
             )}
 

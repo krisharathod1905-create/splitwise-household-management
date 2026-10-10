@@ -28,8 +28,13 @@ const env = {
   OPENAI_API_KEY: getEnv("OPENAI_API_KEY", ""),
   OPENAI_MODEL: getEnv("OPENAI_MODEL", ""),
   DEMO_MODE: getEnv("DEMO_MODE", "true") === "true",
+  TOKEN_QR_SECRET: getEnv("TOKEN_QR_SECRET"),
 };
 
 if (isNaN(env.PORT)) env.PORT = 5000;
+
+if (!env.TOKEN_QR_SECRET || env.TOKEN_QR_SECRET.length < 32) {
+  throw new Error("TOKEN_QR_SECRET must be configured with at least 32 characters.");
+}
 
 export default Object.freeze(env);
