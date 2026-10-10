@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiHome, FiCheckCircle, FiClock, FiShield, FiArrowRight, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
-import { officeApi, tokenApi } from "@/lib/api";
+import { documentApi, officeApi, tokenApi } from "@/lib/api";
+import DocumentChecklist from "@/components/ui/DocumentChecklist";
 import { toast } from "sonner";
 
 export default function BookTokenPage() {
@@ -42,7 +43,24 @@ export default function BookTokenPage() {
   // Issue Token Mutation
   const issueMutation = useMutation({
     mutationFn: async (payload) => {
-      const res = await tokenApi.issue(payload);
+      let documentSubmissionId;
+      const requirements = selectedService?.documentRequirements || selectedService?.requiredDocuments || [];
+      if (requirements.length > 0) {
+        const draftResponse = await documentApi.getDraft({
+          officeId: selectedOfficeId,
+          serviceId: selectedServiceId,
+        });
+        let draft = draftResponse.data.data.submission;
+        if (!draft) {
+          const created = await documentApi.createDraft({
+            officeId: selectedOfficeId,
+            serviceId: selectedServiceId,
+          });
+          draft = created.data.data.submission;
+        }
+        documentSubmissionId = draft._id;
+      }
+      const res = await tokenApi.issue({ ...payload, documentSubmissionId });
       return res.data.data.token;
     },
     onSuccess: (token) => {
@@ -76,8 +94,6 @@ export default function BookTokenPage() {
       notes: notes || undefined,
     });
   };
-
-  console.log(selectedOffice)
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -246,6 +262,13 @@ export default function BookTokenPage() {
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
+
+            {selectedService && (
+              <DocumentChecklist
+                officeId={selectedOfficeId}
+                service={selectedService}
+              />
+            )}
           </motion.div>
         )}
 

@@ -21,6 +21,7 @@ build/
 
 # Express
 # Add Express-specific ignores here
+server/private-documents/
 
 # VSCode
 .vscode/*

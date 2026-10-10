@@ -3,6 +3,7 @@ import { Server as SocketServer } from "socket.io";
 import app from "./app.js";
 import { connectDB } from "#config/db.config.js";
 import env from "#config/env.config.js";
+import { purgeExpiredDocumentFiles } from "#services/document.service.js";
 
 const httpServer = createServer(app);
 
@@ -79,6 +80,14 @@ app.locals.emitEvent = (eventName, payload) => {
 const startServer = async () => {
   try {
     await connectDB();
+    purgeExpiredDocumentFiles().catch((err) => {
+      console.error("[Documents] Initial retention cleanup failed:", err);
+    });
+    setInterval(() => {
+      purgeExpiredDocumentFiles().catch((err) => {
+        console.error("[Documents] Retention cleanup failed:", err);
+      });
+    }, 24 * 60 * 60 * 1000).unref();
 
     httpServer.listen(env.PORT, () => {
       console.log(`\n╔══════════════════════════════════════════╗`);

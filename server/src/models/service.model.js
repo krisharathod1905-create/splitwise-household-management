@@ -1,5 +1,15 @@
 import mongoose from "mongoose";
 
+const documentRequirementSchema = new mongoose.Schema(
+  {
+    requirementId: { type: String, required: true, trim: true },
+    name: { type: String, required: true, trim: true, maxlength: 120 },
+    instructions: { type: String, trim: true, maxlength: 500 },
+    required: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
 const serviceSchema = new mongoose.Schema(
   {
     officeId: {
@@ -18,6 +28,7 @@ const serviceSchema = new mongoose.Schema(
     },
     expectedDurationMinutes: { type: Number, default: 10, min: 1 },
     requiredDocuments: [{ type: String }],
+    documentRequirements: { type: [documentRequirementSchema], default: [] },
     enabled: { type: Boolean, default: true },
     compatibleCounterIds: [
       {

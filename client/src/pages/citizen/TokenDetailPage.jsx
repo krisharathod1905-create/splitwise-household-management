@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { FiClock, FiMapPin, FiCheckCircle, FiXCircle, FiGrid, FiNavigation, FiPhoneCall, FiAlertTriangle, FiArrowLeft } from "react-icons/fi";
-import { tokenApi } from "@/lib/api";
+import { documentApi, tokenApi } from "@/lib/api";
+import DocumentChecklist from "@/components/ui/DocumentChecklist";
 import { getSocket, joinQueueRoom } from "@/lib/socket";
 import { toast } from "sonner";
 import QRCode from "qrcode";
@@ -21,6 +22,14 @@ export default function TokenDetailPage() {
       return res.data.data.token;
     },
     refetchInterval: 5000,
+  });
+  const { data: documentSubmission } = useQuery({
+    queryKey: ["documentSubmission", token?.documentSubmissionId],
+    enabled: Boolean(token?.documentSubmissionId),
+    queryFn: async () => {
+      const response = await documentApi.getSubmission(token.documentSubmissionId);
+      return response.data.data.submission;
+    },
   });
 
   // Generate QR Code image data URL on load
@@ -212,6 +221,13 @@ export default function TokenDetailPage() {
             </span>
           </div>
         </div>
+
+        {documentSubmission && token.serviceId && (
+          <DocumentChecklist
+            service={token.serviceId}
+            submissionId={documentSubmission._id}
+          />
+        )}
 
         {/* Action Buttons */}
         {!isCompleted && !isCancelled && (

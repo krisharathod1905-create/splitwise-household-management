@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FiBell, FiCheck, FiCheckCircle, FiClock, FiAlertTriangle } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiBell, FiCheck } from "react-icons/fi";
 import { notificationApi } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -9,7 +10,7 @@ export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
-      const res = await notificationApi.getAll();
+      const res = await notificationApi.list();
       return res.data.data;
     },
   });
@@ -43,7 +44,7 @@ export default function NotificationsPage() {
           <p className="text-xs text-slate-500">Live queue alerts, counter calls, and delays</p>
         </div>
 
-        {list.some((n) => !n.isRead) && (
+        {list.some((n) => n.status === "unread") && (
           <button
             onClick={() => markAllReadMutation.mutate()}
             className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all"
@@ -66,18 +67,16 @@ export default function NotificationsPage() {
           {list.map((n) => (
             <div
               key={n._id}
-              onClick={() => !n.isRead && markReadMutation.mutate(n._id)}
+              onClick={() => n.status === "unread" && markReadMutation.mutate(n._id)}
               className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-4 ${
-                !n.isRead
+                n.status === "unread"
                   ? "bg-emerald-50/40 border-emerald-500/40 shadow-sm"
                   : "bg-white border-slate-200/70 opacity-80"
               }`}
             >
               <div
                 className={`p-2.5 rounded-xl text-lg shrink-0 ${
-                  n.type === "turn_alert"
-                    ? "bg-rose-100 text-rose-700"
-                    : n.type === "delay"
+                  n.type === "document_update"
                     ? "bg-amber-100 text-amber-700"
                     : "bg-emerald-100 text-emerald-700"
                 }`}
@@ -93,9 +92,14 @@ export default function NotificationsPage() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-600">{n.message}</p>
+                {n.relatedTokenId && (
+                  <Link to={`/tokens/${n.relatedTokenId}`} onClick={(event) => event.stopPropagation()} className="inline-block pt-1 text-[11px] font-bold text-emerald-700 hover:underline">
+                    View token and documents
+                  </Link>
+                )}
               </div>
 
-              {!n.isRead && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2"></span>}
+              {n.status === "unread" && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2"></span>}
             </div>
           ))}
         </div>

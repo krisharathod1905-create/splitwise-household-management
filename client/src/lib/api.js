@@ -121,6 +121,31 @@ export const tokenApi = {
     api.get(`/tokens/queue/${officeId}/${serviceId}/live`),
 };
 
+export const documentApi = {
+  createDraft: (data) => api.post("/documents/draft", data),
+  getDraft: (params) => api.get("/documents/draft", { params }),
+  getSubmission: (id) => api.get(`/documents/${id}`),
+  upload: (submissionId, requirementId, file) => {
+    const data = new FormData();
+    data.append("file", file);
+    return api.post(`/documents/${submissionId}/documents/${encodeURIComponent(requirementId)}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  getFile: (submissionId, requirementId) =>
+    api.get(`/documents/${submissionId}/documents/${encodeURIComponent(requirementId)}/file`, {
+      responseType: "blob",
+    }),
+  listStaffSubmissions: (params) => api.get("/documents/staff", { params }),
+  getStaffSubmission: (id) => api.get(`/documents/staff/${id}`),
+  getStaffFile: (submissionId, requirementId) =>
+    api.get(`/documents/staff/${submissionId}/documents/${encodeURIComponent(requirementId)}/file`, {
+      responseType: "blob",
+    }),
+  review: (submissionId, requirementId, data) =>
+    api.patch(`/documents/staff/${submissionId}/documents/${encodeURIComponent(requirementId)}/review`, data),
+};
+
 
 export const staffApi = {
   getQueue: (officeId) => api.get("/tokens/staff/queue", { params: { officeId } }),

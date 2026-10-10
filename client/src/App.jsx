@@ -31,6 +31,8 @@ const ProfilePage = lazy(() => import("@/pages/citizen/ProfilePage"));
 const StaffDashboard = lazy(() => import("@/pages/staff/StaffDashboard"));
 const StaffQueuePage = lazy(() => import("@/pages/staff/StaffQueuePage"));
 const StaffCounterPage = lazy(() => import("@/pages/staff/StaffCounterPage"));
+const StaffDocumentQueuePage = lazy(() => import("@/pages/staff/StaffDocumentQueuePage"));
+const StaffDocumentReviewPage = lazy(() => import("@/pages/staff/StaffDocumentReviewPage"));
 
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminOfficesPage = lazy(() => import("@/pages/admin/AdminOfficesPage"));
@@ -135,6 +137,8 @@ function AppRoutes() {
         <Route path="/staff" element={<SuspenseWrapper><StaffDashboard /></SuspenseWrapper>} />
         <Route path="/staff/queue" element={<SuspenseWrapper><StaffQueuePage /></SuspenseWrapper>} />
         <Route path="/staff/counter" element={<SuspenseWrapper><StaffCounterPage /></SuspenseWrapper>} />
+        <Route path="/staff/documents" element={<SuspenseWrapper><StaffDocumentQueuePage /></SuspenseWrapper>} />
+        <Route path="/staff/documents/:submissionId" element={<SuspenseWrapper><StaffDocumentReviewPage /></SuspenseWrapper>} />
       </Route>
 
       {/* Admin */}
